@@ -1,9 +1,8 @@
 # Terraform
 
-
 ### Installation
 
-```bash
+```bash {"id":"01HZBZ6B5BRJDHW3F4Z88BG346"}
 # Install the HashiCorp tap
 brew tap hashicorp/tap
 
@@ -16,38 +15,44 @@ terraform -help
 ```
 
 ### Intialize Terraform
-```hcl
+
+```hcl {"id":"01HZBZ6B5BRJDHW3F4ZA8W0MQQ"}
 terraform init
 ```
 
 ### Plan the Terraform
-```hcl
+
+```terraform {"id":"01HZBZ6B5BRJDHW3F4ZBE81EVZ"}
 terraform plan
 
-<!-- plan with variable -->
+# plan with variable
 terraform plan -var="XXXX=XXXX"
 ```
 
 ### Apply the Terraform
-```hcl
+
+```terraform {"id":"01HZBZ6B5BRJDHW3F4ZEN0884S"}
 terraform apply
 
-<!-- apply with variable -->
+# apply with variable
 terraform apply -var="XXXX=XXXX"
 ```
 
 ### Destroy the Terraform
-```hcl
+
+```terraform {"id":"01HZBZ6B5BRJDHW3F4ZJFBJY7M"}
 terraform destroy
 ```
 
 ### Terraform Commands
-```hcl
+
+```terraform {"id":"01HZBZ6B5BRJDHW3F4ZKK25K3G"}
 terraform --help
 ```
 
 ### Terraform State
-```hcl
+
+```terraform {"id":"01HZBZ6B5BRJDHW3F4ZPCS76TZ"}
 terraform state list
 terraform state show <resource_name>
 ```
