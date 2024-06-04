@@ -9,5 +9,6 @@ Collection of useful commands for DevOps tasks.
 - [Docker](./docker/README.md)
 - [Google Cloud CLI](./gcloud/README.md)
 - [Kubernetes](./k8s/README.md)
+- [MongoDB](./mongodb/README.md)
 - [Terraform](./terraform/README.md)
 - [Trivy](./trivy/README.md)
