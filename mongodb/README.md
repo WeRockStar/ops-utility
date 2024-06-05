@@ -14,6 +14,9 @@
 
 ```bash {"id":"01HZKNGYQ4NN036D59TGHSAES4"}
 # 1. Dump a database
+# -out: output directory
+# --uri: connection string
+# --archive: output to a single file
 mongodump --uri="mongodb://admin:secret@localhost:27017/?authSource=admin"
 
 # 2. Restore a database
