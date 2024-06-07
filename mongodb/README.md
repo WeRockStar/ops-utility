@@ -20,7 +20,6 @@ Dumping binary data from a MongoDB database, and restoring it to another databas
    - `mongodump --uri="XXXX" -d <database>` or `mongodump --uri="XXXX" -c <collection>`
 
 `mongodump` Options
-
 - `-out`: output directory
 - `--uri`: connection string
 - `--archive`: output to a single file
@@ -28,9 +27,9 @@ Dumping binary data from a MongoDB database, and restoring it to another databas
 - `-d`: database
 - `-c`: collection
 - `query`: query to filter the data
+- `--oplog`: include oplog in the dump, for point-in-time backup
 
 `mongorestore` Options
-
 - `--uri`: connection string
 - `--archive`: input from a single file
 - `--nsFrom`: source namespace e.g. `<database_name>.<collection_name>`
