@@ -1,6 +1,6 @@
 # MongoDB
 
-### Prepare the data
+### Prepare the Data
 
 1. `docker compose up` to start the MongoDB server
 2. Data Source running on `localhost:27017`
@@ -20,6 +20,7 @@ Dumping binary data from a MongoDB database, and restoring it to another databas
    - `mongodump --uri="XXXX" -d <database>` or `mongodump --uri="XXXX" -c <collection>`
 
 `mongodump` Options
+
 - `-out`: output directory
 - `--uri`: connection string
 - `--archive`: output to a single file
@@ -27,9 +28,10 @@ Dumping binary data from a MongoDB database, and restoring it to another databas
 - `-d`: database
 - `-c`: collection
 - `query`: query to filter the data
-- `--oplog`: include oplog in the dump, for point-in-time backup
+- `--oplog`: include oplog (operaion log) in the dump, for point-in-time backup
 
 `mongorestore` Options
+
 - `--uri`: connection string
 - `--archive`: input from a single file
 - `--nsFrom`: source namespace e.g. `<database_name>.<collection_name>`
@@ -53,3 +55,8 @@ mongorestore --uri="mongodb://admin:secret@localhost:27018/?authSource=admin"
 
 2. Import a collection
    - Then, `mongoimport` will import the JSON file to the collection.
+
+### Monitoring MongoDB
+
+1. `mongotop`: track the read and write activity of MongoDB
+2. `mongostat`: track the status of a running MongoDB instance
