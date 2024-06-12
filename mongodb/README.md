@@ -1,5 +1,16 @@
 # MongoDB
 
+## Backup and Restore
+
+MongoDB provides tools to backup and restore databases and collections.
+
+- `mongodump` and `mongorestore` for binary data
+- `mongoexport` and `mongoimport` for JSON data
+- MongoDB Atlas provides backup and restore services
+  - Automated backups
+  - On-demand backups
+  - Point-in-time recovery
+
 ### Prepare the Data
 
 1. `docker compose up` to start the MongoDB server
