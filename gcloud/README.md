@@ -6,12 +6,6 @@
 gcloud auth login
 ```
 
-### Set the project
-
-```bash {"id":"01HZBZHYK70RX58KDCSEWS1B9H"}
-gcloud config set project <project-id>
-```
-
 ### List the projects
 
 ```bash {"id":"01HZBZHYK70RX58KDCSJ022VDT"}
@@ -19,6 +13,12 @@ gcloud projects list
 
 # List project in core section
 gcloud config list project
+```
+
+### Set the project
+
+```bash {"id":"01HZBZHYK70RX58KDCSEWS1B9H"}
+gcloud config set project <project-id>
 ```
 
 ### Get GKE Credentials
