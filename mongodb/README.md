@@ -33,12 +33,13 @@ Dumping binary data from a MongoDB database, and restoring it to another databas
 `mongodump` Options
 
 - `-out`: output directory
+- `--config`: path to a configuration file
 - `--uri`: connection string
 - `--archive`: output to a single file
 - `--gzip`: compress the output
 - `-d`: database
 - `-c`: collection
-- `query`: query to filter the data
+- `--query`: query to filter the data
 - `--oplog`: include oplog (operaion log) in the dump, for point-in-time backup
 
 `mongorestore` Options
@@ -51,6 +52,7 @@ Dumping binary data from a MongoDB database, and restoring it to another databas
 - `--dryRun`: test the restore operation
 - `--gzip`: decompress the input
 - `--objcheck`: validate the objects before inserting
+- `--maintainInsertionOrder`: maintain the order of the inserted documents
 
 ```bash {"id":"01HZPR6NWZ1V9J18DDPG1SSMPM"}
 mongodump --uri="mongodb://admin:secret@localhost:27017/?authSource=admin"
