@@ -15,16 +15,13 @@ docker ps
 docker ps -a
 ```
 
-## Start Container
+## Start/Stop Container
 
 ```bash
 docker run <image_name>
-```
-
-## Start Container
-
-```bash
 docker start <container_id>
+
+docker stop <container_id>
 ```
 
 ## Volume
