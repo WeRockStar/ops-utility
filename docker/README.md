@@ -91,3 +91,13 @@ docker system prune
 ```bash
 docker image prune
 ```
+
+## Compose
+
+```bash
+docker compose up
+
+docker compose up -d
+
+docker compose down
+```
