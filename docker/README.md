@@ -34,6 +34,9 @@ docker volume ls
 
 # delete volume
 docker volume rm <volume_name>
+
+# prune volumes
+docker volume prune
 ```
 
 ## Environment Variables
