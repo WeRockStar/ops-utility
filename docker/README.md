@@ -28,6 +28,12 @@ docker stop <container_id>
 
 ```bash
 docker run -v /path/to/host:/path/to/container <image_name>
+
+# list volumes
+docker volume ls
+
+# delete volume
+docker volume rm <volume_name>
 ```
 
 ## Environment Variables
