@@ -31,3 +31,15 @@ helm search repo <REPO_NAME>
 # example. Search Airbyte Helm Repository
 helm search repo airbyte
 ```
+
+## Install Helm Chart
+
+```bash
+helm install <RELEASE_NAME> <REPO_NAME>
+
+# example. Install Airbyte Helm Chart
+helm install airbyte airbyte/airbyte
+
+# Specific namespace for install
+helm install airbyte airbyte/airbyte --namespace airbyte
+```
