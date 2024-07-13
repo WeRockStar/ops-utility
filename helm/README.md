@@ -43,3 +43,18 @@ helm install airbyte airbyte/airbyte
 # Specific namespace for install
 helm install airbyte airbyte/airbyte --namespace airbyte
 ```
+
+## Upgrade Helm Chart
+
+```bash
+helm upgrade <RELEASE_NAME> <REPO_NAME>
+
+# or install with upgrade
+helm upgrade --install airflow apache-airflow/airflow
+```
+
+## Uninstall Helm Chart
+
+```bash
+helm uninstall <RELEASE_NAME>
+```
