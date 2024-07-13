@@ -1,0 +1,33 @@
+# Helm - Package Manager for Kubernetes
+
+## Installation on MacOS
+
+```bash
+brew install helm
+```
+
+## Getting Started
+
+```bash
+helm --version
+```
+
+## Add Helm Repository
+
+```bash
+helm repo add <REPO_NAME> <REPO_URL>
+
+# example. Add Airbyte Helm Repository
+helm repo add airbyte https://airbytehq.github.io/helm-charts
+```
+
+## Search Helm Repository
+
+Search Helm repository for available charts. If no repository is specified, it will search all repositories.
+
+```bash
+helm search repo <REPO_NAME>
+
+# example. Search Airbyte Helm Repository
+helm search repo airbyte
+```

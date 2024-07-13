@@ -8,6 +8,7 @@ Collection of useful commands for DevOps tasks.
 - [ArgoCD](./argocd/README.md)
 - [Docker](./docker/README.md)
 - [Google Cloud CLI](./gcloud/README.md)
+- [Helm](./helm/README.md)
 - [Kubernetes](./k8s/README.md)
 - [MongoDB](./mongodb/README.md)
 - [Terraform](./terraform/README.md)
