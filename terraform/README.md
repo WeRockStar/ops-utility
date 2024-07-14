@@ -1,5 +1,7 @@
 # Terraform
 
+The collection of Terraform scripts.
+
 ## Installation
 
 ```bash
@@ -61,4 +63,16 @@ terraform --help
 ```terraform
 terraform state list
 terraform state show <resource_name>
+```
+
+## Terraform Format
+
+```terraform
+terraform fmt
+
+# format specific file
+terraform fmt <file_name>
+
+# recursive format
+terraform fmt -recursive
 ```
