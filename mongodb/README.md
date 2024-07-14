@@ -54,7 +54,7 @@ Dumping binary data from a MongoDB database, and restoring it to another databas
 - `--objcheck`: validate the objects before inserting
 - `--maintainInsertionOrder`: maintain the order of the inserted documents
 
-```bash {"id":"01HZPR6NWZ1V9J18DDPG1SSMPM"}
+```bash
 mongodump --uri="mongodb://admin:secret@localhost:27017/?authSource=admin"
 
 # 2. Restore a database
