@@ -1,8 +1,12 @@
 # Trivy
 
+## Introduction
+
+[Trivy](https://trivy.dev/) is a simple and comprehensive vulnerability scanner for containers and other artifacts.
+
 ### Scan IaC
 
-```bash {"id":"01HZE7CWD507G7WRYG0PEJPSY9"}
+```bash
 trivy config --severity=CRITICAL,HIGH ./
 ```
 
