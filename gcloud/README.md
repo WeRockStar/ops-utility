@@ -2,8 +2,11 @@
 
 ### Login to Google Cloud
 
-```bash {"id":"01HZBZHYK70RX58KDCSERNHFCD"}
+```bash
 gcloud auth login
+
+# application default
+gcloud auth application-default login
 ```
 
 ### List the projects
