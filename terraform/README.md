@@ -66,6 +66,9 @@ terraform --help
 ```terraform
 terraform state list
 terraform state show <resource_name>
+
+# remove the resource from the state
+terraform state rm <resource_name>
 ```
 
 ## Terraform Format
