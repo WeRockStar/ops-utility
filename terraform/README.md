@@ -41,6 +41,9 @@ terraform apply -var="XXXX=XXXX"
 
 # specific resource
 terraform apply -target=<resource_name>
+
+# specific module
+terraform apply -target=module.<module_name>
 ```
 
 ### Destroy the Terraform
