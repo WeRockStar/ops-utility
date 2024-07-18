@@ -43,6 +43,9 @@ plain-docker:
 kaniko:
     stage: kaniko
     image: gcr.io/kaniko-project/executor:latest
+    before_script:
+        - echo $SERVICE_ACCOUNT_JSON > sa.json
+        - export GOOGLE_APPLICATION_CREDENTIALS=sa.json
     script:
         - /kaniko/executor --context "$CI_PROJECT_DIR" --dockerfile "$CI_PROJECT_DIR/Dockerfile" --destination "$CI_REGISTRY_IMAGE:$CI_COMMIT_SHA"
 ```
