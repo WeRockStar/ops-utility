@@ -1,5 +1,14 @@
 # MongoDB
 
+## Table of Contents
+
+- [Backup and Restore](#backup-and-restore)
+   1. [Prepare the Data](#prepare-the-data)
+   2. [Dumping and Restoring a MongoDB Database](#dumping-and-restoring-a-mongodb-database)
+   3. [Import and Export a Collection (Single Collection)](#import-and-export-a-collection-single-collection)
+- [Monitoring MongoDB](#monitoring-mongodb)
+- [Verify Migrations](#verify-migrations)
+
 ## Backup and Restore
 
 MongoDB provides tools to backup and restore databases and collections.
@@ -73,3 +82,7 @@ mongorestore --uri="mongodb://admin:secret@localhost:27018/?authSource=admin"
 
 1. `mongotop`: track the read and write activity of MongoDB
 2. `mongostat`: track the status of a running MongoDB instance
+
+## Verify Migrations
+
+Reduces the risk of undetected data inconsistencies from migrations [migration-verifier](https://github.com/mongodb-labs/migration-verifier)

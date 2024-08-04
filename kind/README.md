@@ -22,13 +22,13 @@ kind create cluster --name kind-cluster --config kind-cluster.yaml
 
 ### Working with Kubernetes via kubectl
 
-Get the Kubernetes context.
+Get the Kubernetes context
 
 ```bash
 kubectl cluster-info --context kind-cluster
 ```
 
-View the nodes in the cluster.
+View the nodes in the cluster
 
 ```bash
 kubectl get nodes
