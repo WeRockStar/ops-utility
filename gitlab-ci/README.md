@@ -28,7 +28,7 @@ deploy:
 
 ## Pipeline at Scale
 
-- Hidden Jobs
+### Hidden Jobs
 
 ```yaml
 stages:
@@ -53,7 +53,7 @@ deploy-prod:
         - terraform apply -var="env=prod"
 ```
 
-- Include CI templates
+### Include CI templates
 
 `Jobs/Deploy.yml`
 

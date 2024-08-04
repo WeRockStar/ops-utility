@@ -2,6 +2,20 @@
 
 The collection of Terraform scripts.
 
+## Table of Contents
+
+- [Installation](#installation)
+- [Intialize Terraform](#intialize-terraform)
+- [Plan the Terraform](#plan-the-terraform)
+- [Apply the Terraform](#apply-the-terraform)
+- [Destroy the Terraform](#destroy-the-terraform)
+- [Terraform Commands](#terraform-commands)
+- [Terraform State](#terraform-state)
+- [Terraform Format](#terraform-format)
+- [Terraform Validate](#terraform-validate)
+- [Terraform Workspace](#terraform-workspace)
+- [Tools](#tools)
+
 ## Installation
 
 ```bash
@@ -97,3 +111,16 @@ terraform workspace new <workspace_name>
 terraform workspace select <workspace_name>
 terraform workspace delete <workspace_name>
 ```
+
+## Tools
+
+- [TFLint](https://github.com/terraform-linters/tflint)
+- [Open Policy Agent](https://github.com/open-policy-agent/opa)
+- [Terrascan](https://github.com/tenable/terrascan)
+- [Checkov](https://github.com/bridgecrewio/checkov)
+- [Terratest](https://github.com/gruntwork-io/terratest)
+- [Terragrunt](https://github.com/gruntwork-io/terragrunt)
+- [Infracost](https://github.com/infracost/infracost)
+- [Terratag](https://github.com/env0/terratag)
+- [Terraform-docs](https://github.com/terraform-docs/terraform-docs/)
+- [Terraform-Switcher](https://github.com/warrensbox/terraform-switcher)
