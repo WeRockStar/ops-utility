@@ -28,6 +28,65 @@ deploy:
 
 - Hidden Jobs
 
+```yaml
+stages:
+  - deploy-dev
+  - deploy-prod
+
+.deploy:
+    image: hashicorp/terraform:1.9.3
+    before_script:
+        - terraform init
+
+deploy-dev:
+    stage: deploy-dev
+    extends: .deploy
+    script:
+        - terraform apply -var="env=dev"
+
+deploy-prod:
+    stage: deploy-prod
+    extends: .deploy
+    script:
+        - terraform apply -var="env=prod"
+```
+
+- Include CI templates
+
+`Jobs/Deploy.yml`
+
+```yaml
+.deploy:
+    image: hashicorp/terraform:1.9.3
+    before_script:
+        - terraform init
+```
+
+`gitlab-ci.yml`
+
+```yaml
+# include: "Jobs/Deploy.yml"
+
+include:
+    - template: Jobs/Deploy.yml
+
+stages:
+    - deploy-dev
+    - deploy-prod
+
+deploy-dev:
+    stage: deploy-dev
+    extends: .deploy
+    script:
+        - terraform apply -var="env=dev"
+
+deploy-prod:
+    stage: deploy-prod
+    extends: .deploy
+    script:
+        - terraform apply -var="env=prod"
+```
+
 ## Build Docker Images
 
 ```yaml
