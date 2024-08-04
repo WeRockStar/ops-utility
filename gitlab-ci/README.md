@@ -2,6 +2,8 @@
 
 ## Overview
 
+Gitlab CI/CD is a continuous integration and continuous deployment tool that is integrated with Gitlab. It is used to automate the process of testing and deploying code.
+
 ```yaml
 stages:
   - build

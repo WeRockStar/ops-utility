@@ -24,7 +24,7 @@ terraform init
 
 ### Plan the Terraform
 
-```terraform
+```hcl
 terraform plan
 
 # plan with variable
@@ -33,7 +33,7 @@ terraform plan -var="XXXX=XXXX"
 
 ### Apply the Terraform
 
-```terraform
+```hcl
 terraform apply
 
 # apply with variable
@@ -48,7 +48,7 @@ terraform apply -target=module.<module_name>
 
 ### Destroy the Terraform
 
-```terraform
+```hcl
 terraform destroy
 
 # destroy specific resource
@@ -57,13 +57,13 @@ terraform destroy -target=<resource_name>
 
 ### Terraform Commands
 
-```terraform
+```hcl
 terraform --help
 ```
 
 ### Terraform State
 
-```terraform
+```hcl
 terraform state list
 terraform state show <resource_name>
 
@@ -73,7 +73,7 @@ terraform state rm <resource_name>
 
 ## Terraform Format
 
-```terraform
+```hcl
 terraform fmt
 
 # format specific file
@@ -81,4 +81,19 @@ terraform fmt <file_name>
 
 # recursive format
 terraform fmt -recursive
+```
+
+## Terraform Validate
+
+```hcl
+terraform validate
+```
+
+## Terraform Workspace
+
+```hcl
+terraform workspace list
+terraform workspace new <workspace_name>
+terraform workspace select <workspace_name>
+terraform workspace delete <workspace_name>
 ```
