@@ -88,6 +88,10 @@ terraform state rm <resource_name>
 ## Terraform Format
 
 ```hcl
+# check the format
+terraform fmt -check
+
+# format the files
 terraform fmt
 
 # format specific file
