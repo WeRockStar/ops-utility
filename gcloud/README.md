@@ -11,11 +11,14 @@ gcloud auth application-default login
 
 ### List the projects
 
-```bash {"id":"01HZBZHYK70RX58KDCSJ022VDT"}
+```bash
 gcloud projects list
 
 # List project in core section
 gcloud config list project
+
+# Current project
+gcloud config get-value project
 ```
 
 ### Set the project
