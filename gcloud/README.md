@@ -23,7 +23,7 @@ gcloud config get-value project
 
 ### Set the project
 
-```bash {"id":"01HZBZHYK70RX58KDCSEWS1B9H"}
+```bash
 gcloud config set project <project-id>
 ```
 
