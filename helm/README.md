@@ -10,6 +10,8 @@ brew install helm
 
 ```bash
 helm --version
+
+helm repo list
 ```
 
 ## Add Helm Repository
@@ -51,6 +53,9 @@ helm upgrade <RELEASE_NAME> <REPO_NAME>
 
 # or install with upgrade
 helm upgrade --install airflow apache-airflow/airflow
+
+# update helm repository
+helm repo update
 ```
 
 ## Uninstall Helm Chart
