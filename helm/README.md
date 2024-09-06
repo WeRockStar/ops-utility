@@ -12,6 +12,9 @@ brew install helm
 helm --version
 
 helm repo list
+
+# list all installed releases
+helm ls
 ```
 
 ## Add Helm Repository
@@ -44,6 +47,13 @@ helm install airbyte airbyte/airbyte
 
 # Specific namespace for install
 helm install airbyte airbyte/airbyte --namespace airbyte
+
+# nginx is a name of release
+helm install nginx bitnami/nginx --version 16.0.6
+
+# show values of helm chart
+helm show values bitnami/nginx
+helm show values bitnami/nginx > values.yaml
 ```
 
 ## Upgrade Helm Chart
@@ -56,10 +66,30 @@ helm upgrade --install airflow apache-airflow/airflow
 
 # update helm repository
 helm repo update
+
+# upgrade ngnix to latest version (nginx is a name of release)
+helm upgrade nginx bitnami/nginx
 ```
 
 ## Uninstall Helm Chart
 
 ```bash
 helm uninstall <RELEASE_NAME>
+```
+
+## Revision History
+
+```bash
+helm history <RELEASE_NAME>
+
+helm history nginx
+```
+
+## Rollback
+
+```bash
+helm rollback <RELEASE_NAME> <REVISION_NUMBER>
+
+# check revision version
+helm ls
 ```
