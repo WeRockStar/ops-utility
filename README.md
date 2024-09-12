@@ -7,6 +7,7 @@ Collection of useful commands for DevOps tasks.
 - [Ansible](./ansible/README.md)
 - [ArgoCD](./argocd/README.md)
 - [AWS CLI](./aws-cli/README.md)
+- [Colima](./colima/README.md)
 - [Docker](./docker/README.md)
 - [Google Cloud CLI](./gcloud/README.md)
 - [Github Actions](./github-action/README.md)
