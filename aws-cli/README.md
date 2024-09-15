@@ -1,6 +1,6 @@
 # AWS CLI
 
-### Login
+## Login
 
 Before using the AWS CLI, you need to configure your AWS credentials.
 
