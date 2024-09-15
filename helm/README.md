@@ -71,7 +71,7 @@ helm repo update
 helm upgrade nginx bitnami/nginx
 ```
 
-## Uninstall Helm Chart
+## Uninstall Helm Release
 
 ```bash
 helm uninstall <RELEASE_NAME>
