@@ -18,3 +18,7 @@ Collection of useful commands for DevOps tasks.
 - [MongoDB](./mongodb/README.md)
 - [Terraform](./terraform/README.md)
 - [Trivy](./trivy/README.md)
+- [Prometheus](./prometheus/README.md) - In Progress
+- [Grafana](./grafana/README.md) - In Progress
+- [Kustomize](./kustomize/README.md) - In Progress
+- [OpenTelemetry](./opentelemetry/README.md) - In Progress
