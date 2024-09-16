@@ -56,6 +56,10 @@ helm show values bitnami/nginx
 helm show values bitnami/nginx > values.yaml
 ```
 
+Note: While installing Helm chart, you can specify the namespace where the chart will be installed. Moreover, you will see metadata of the chart, such as chart version, application version, revision, status, and so on.
+
+```bash
+
 ## Upgrade Helm Chart
 
 ```bash
