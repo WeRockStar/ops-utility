@@ -48,7 +48,7 @@ helm install airbyte airbyte/airbyte
 # Specific namespace for install
 helm install airbyte airbyte/airbyte --namespace airbyte
 
-# nginx is a name of release
+# nginx is a name of release, and specific chart version (not same version for app version)
 helm install nginx bitnami/nginx --version 16.0.6
 
 # show values of helm chart
