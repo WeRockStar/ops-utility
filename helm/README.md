@@ -96,6 +96,11 @@ helm history nginx
 ```bash
 helm rollback <RELEASE_NAME> <REVISION_NUMBER>
 
+# example. Rollback to previous revision
+helm rollback nginx 1
+
 # check revision version
 helm ls
 ```
+
+Note: Helm rollback will create new revision.
