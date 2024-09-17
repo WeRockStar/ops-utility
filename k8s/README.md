@@ -34,6 +34,15 @@ kubectl get secrets
 # Secret details (airflow-postgresql is the name of the secret)
 kubectl get secret airflow-postgresql -oyaml
 
+# Persistent Volume
+kubectl get persistentvolumes
+# or shorter
+kubectl get pv
+
+# Persistent Volume Claim
+kubectl get persistentvolumeclaims
+# or shorter
+kubectl get pvc
 ```
 
 Note: `echo <BASE64> | base64 -d` to decode the secret
