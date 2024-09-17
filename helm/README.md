@@ -6,6 +6,14 @@
 brew install helm
 ```
 
+## Concepts
+
+- **Release**: A release is a running instance of a Helm chart. It is created by installing a chart.
+- **Chart**: A chart is a Helm package that contains all the resource definitions necessary to run an application, tool, or service inside a Kubernetes cluster.
+- **Repository**: A repository is a collection of Helm charts that are published to a remote location such as artifact hub.
+- **Lifecycle**: Helm lifecycle has two phases: install and upgrade.
+- **Hook**: A hook is a piece of code that is executed at a specific point in the lifecycle of a release.
+
 ## Getting Started
 
 ```bash
