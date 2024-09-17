@@ -76,6 +76,7 @@ helm repo update
 helm upgrade nginx bitnami/nginx
 
 # upgrade nginx with new tag
+# App Version will be not changed
 helm upgrade nginx bitnami/nginx --set image.tag=1.26-debian-12
 ```
 
