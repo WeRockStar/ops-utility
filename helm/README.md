@@ -59,6 +59,9 @@ helm install airbyte airbyte/airbyte --namespace airbyte
 # nginx is a name of release, and specific chart version (not same version for app version)
 helm install nginx bitnami/nginx --version 16.0.6
 
+# show status of release (or display all k8s resources)
+helm status nginx --show-resources # --show-desc
+
 # show values of helm chart
 helm show values bitnami/nginx
 helm show values bitnami/nginx > values.yaml
@@ -100,6 +103,23 @@ helm uninstall <RELEASE_NAME>
 helm history <RELEASE_NAME>
 
 helm history nginx
+```
+
+## View Release Details
+
+```bash
+helm get values <RELEASE_NAME>
+
+helm get values nginx
+
+# status of release
+helm status nginx
+
+# k8s resources
+helm status airflow --show-resources
+
+# description message of release
+helm status airflow --show-desc
 ```
 
 ## Rollback
