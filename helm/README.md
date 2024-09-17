@@ -74,6 +74,9 @@ helm repo update
 
 # upgrade ngnix to latest version (nginx is a name of release)
 helm upgrade nginx bitnami/nginx
+
+# upgrade nginx with new tag
+helm upgrade nginx bitnami/nginx --set image.tag=1.26-debian-12
 ```
 
 ## Uninstall Helm Release
