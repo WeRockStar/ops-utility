@@ -115,7 +115,7 @@ helm get values nginx
 # status of release
 helm status nginx
 
-# k8s resources
+# k8s resources (what resources will be created)
 helm status airflow --show-resources
 
 # description message of release

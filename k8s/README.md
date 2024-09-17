@@ -27,7 +27,16 @@ kubectl get services
 
 # Deployments
 kubectl get deployments
+
+# Secrets
+kubectl get secrets
+
+# Secret details (airflow-postgresql is the name of the secret)
+kubectl get secret airflow-postgresql -oyaml
+
 ```
+
+Note: `echo <BASE64> | base64 -d` to decode the secret
 
 ## Apply/Delete the Configuration
 
