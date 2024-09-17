@@ -61,8 +61,6 @@ Note: While installing Helm chart, you can specify the namespace where the chart
 ![Helm Install Process](helm-install.png)
 Written in [templates/NOTES.txt](https://github.com/bitnami/charts/blob/main/bitnami/nginx/templates/NOTES.txt)
 
-```bash
-
 ## Upgrade Helm Chart
 
 ```bash
