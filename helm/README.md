@@ -23,6 +23,9 @@ helm repo list
 
 # list all installed releases
 helm ls
+
+# show helm environment variables
+helm env
 ```
 
 ## Add Helm Repository
