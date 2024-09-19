@@ -138,3 +138,15 @@ helm ls
 ```
 
 Note: Helm rollback will create new revision.
+
+## Pull Helm Chart
+
+```bash
+helm pull <REPO_NAME>
+
+# example: nginx
+helm pull bitnami/nginx
+
+# extract helm chart
+tar -xvf nginx-16.0.6.tgz
+```
