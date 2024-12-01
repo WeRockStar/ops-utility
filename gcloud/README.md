@@ -1,5 +1,9 @@
 # Google Cloud CLI
 
+## Why
+
+Every time I use Google Cloud CLI, I have to search for the commands. So, I decided to write a simple guide for myself.
+
 ### Login to Google Cloud
 
 ```bash
@@ -7,6 +11,10 @@ gcloud auth login
 
 # application default
 gcloud auth application-default login
+
+gcloud auth activate-service-account --key-file="SERVICE_ACCOUNT_KEY_FILE.json"
+# example
+gcloud auth activate-service-account --key-file="./sa.json"
 ```
 
 ### List the projects
