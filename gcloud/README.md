@@ -4,6 +4,20 @@
 
 Every time I use Google Cloud CLI, I have to search for the commands. So, I decided to write a simple guide for myself.
 
+### Auth
+
+List active account
+
+```bash
+gcloud auth list
+```
+
+Set the active account
+
+```bash
+gcloud config set account `<ACCOUNT>`
+```
+
 ### Login to Google Cloud
 
 ```bash
