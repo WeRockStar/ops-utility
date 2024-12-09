@@ -21,3 +21,16 @@ trivy image --severity HIGH,CRITICAL alpine:3.15
 # Scan image from tar file
 trivy image --input ruby-3.1.tar
 ```
+
+### Scan Filesystem
+
+```bash
+trivy fs --severity HIGH,CRITICAL .
+```
+
+### Options (I'm using frequently)
+
+- `--severity` - Specify the severities of vulnerabilities to be displayed
+- `--format` - Specify the output format (table, json, template, github)
+- `--skip-dirs` - Skip the specified directories
+- `--skip-files` - Skip the specified files
