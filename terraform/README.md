@@ -14,6 +14,7 @@ The collection of Terraform scripts.
 - [Terraform Format](#terraform-format)
 - [Terraform Validate](#terraform-validate)
 - [Terraform Workspace](#terraform-workspace)
+- [Managing Terraform Client Versions](#managing-terraform-client-versions)
 - [Tools](#tools)
 
 ## Installation
@@ -114,6 +115,23 @@ terraform workspace list
 terraform workspace new <workspace_name>
 terraform workspace select <workspace_name>
 terraform workspace delete <workspace_name>
+```
+
+## Managing Terraform Client Versions
+
+Use [tfenv](https://github.com/tfutils/tfenv) to manage multiple versions of Terraform easily.
+```bash
+# Install specific Terraform version
+tfenv install <version>
+
+# Use/switch to specific Terraform version
+tfenv use <version>
+
+# List all installed Terraform versions
+tfenv list
+
+# Uninstall specific Terraform version
+tfenv uninstall <version>
 ```
 
 ## Tools
