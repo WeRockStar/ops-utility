@@ -67,3 +67,13 @@ kubectl get namespace
 # View Pod in the namespace
 kubectl get pods -n <namespace_name>
 ```
+
+## Forword the Port
+
+```bash
+# Forward the port of a service
+kubectl -n <namespace_name> port-forward service/<service_name> <local_port>:<remote_port>
+
+# Airbyte example
+kubectl -n airbyte port-forward deployment/airbyte-webapp 8080:8080
+```
