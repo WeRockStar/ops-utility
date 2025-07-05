@@ -68,7 +68,7 @@ kubectl get namespace
 kubectl get pods -n <namespace_name>
 ```
 
-## Forword the Port
+## Forward the Port
 
 ```bash
 # Forward the port of a service
