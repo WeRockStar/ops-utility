@@ -4,12 +4,12 @@ Collection of useful commands for DevOps tasks.
 
 ## Table of Contents
 
-- [Ansible](./ansible/README.md)
+- [Ansible](./ansible/README.md) - In Progress
 - [ArgoCD](./argocd/README.md)
 - [AWS CLI](./aws-cli/README.md)
 - [Colima](./colima/README.md)
 - [Docker](./docker/README.md)
-- [Github Actions](./github-action/README.md)
+- [Github Actions](./github-action/README.md) - In Progress
 - [Gitlab CI](./gitlab-ci/README.md)
 - [Google Cloud CLI](./gcloud/README.md)
 - [GPG Keys](./gpg-key/README.md)
