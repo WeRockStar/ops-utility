@@ -44,7 +44,8 @@ pipeline {
     environment {
         APP_NAME = 'my-application'
         APP_VERSION = "${BUILD_NUMBER}"
-        DOCKER_REGISTRY = 'your-registry.com'
+        GCP_PROJECT = 'your-gcp-project'
+        GCP_REGION = 'us-central1'
     }
     
     stages {
@@ -86,14 +87,17 @@ pipeline {
             }
         }
         
-        stage('Docker Build') {
+        stage('Build and Push to Artifact Registry') {
             steps {
                 script {
-                    def image = docker.build("${DOCKER_REGISTRY}/${APP_NAME}:${APP_VERSION}")
-                    docker.withRegistry('https://' + DOCKER_REGISTRY, 'docker-registry-credentials') {
-                        image.push()
-                        image.push('latest')
-                    }
+                    sh """
+                        # Configure Docker for Artifact Registry
+                        gcloud auth configure-docker us-central1-docker.pkg.dev
+                        
+                        # Build and push to Google Cloud Artifact Registry
+                        gcloud builds submit --tag us-central1-docker.pkg.dev/\${GCP_PROJECT}/${APP_NAME}/${APP_NAME}:${APP_VERSION} .
+                        gcloud builds submit --tag us-central1-docker.pkg.dev/\${GCP_PROJECT}/${APP_NAME}/${APP_NAME}:latest .
+                    """
                 }
             }
         }
@@ -102,10 +106,12 @@ pipeline {
             steps {
                 script {
                     sh """
-                        kubectl set image deployment/${APP_NAME} \
-                            ${APP_NAME}=${DOCKER_REGISTRY}/${APP_NAME}:${APP_VERSION} \
-                            -n staging
-                        kubectl rollout status deployment/${APP_NAME} -n staging
+                        gcloud run deploy ${APP_NAME}-staging \
+                            --image=us-central1-docker.pkg.dev/\${GCP_PROJECT}/${APP_NAME}/${APP_NAME}:${APP_VERSION} \
+                            --region=${GCP_REGION} \
+                            --platform=managed \
+                            --allow-unauthenticated \
+                            --set-env-vars=NODE_ENV=staging
                     """
                 }
             }
@@ -114,7 +120,10 @@ pipeline {
         stage('Smoke Tests') {
             steps {
                 script {
-                    sh 'curl -f http://staging.${APP_NAME}.com/health || exit 1'
+                    sh """
+                        STAGING_URL=\$(gcloud run services describe ${APP_NAME}-staging --region=${GCP_REGION} --format='value(status.url)')
+                        curl -f \$STAGING_URL/health || exit 1
+                    """
                     echo 'Smoke tests passed!'
                 }
             }
@@ -135,17 +144,30 @@ pipeline {
                 script {
                     if (params.DEPLOYMENT_STRATEGY == 'blue-green') {
                         sh """
-                            kubectl apply -f k8s/blue-green-deployment.yaml
-                            kubectl set image deployment/${APP_NAME}-blue \
-                                ${APP_NAME}=${DOCKER_REGISTRY}/${APP_NAME}:${APP_VERSION} \
-                                -n production
+                            # Deploy new revision to Cloud Run with no traffic
+                            gcloud run deploy ${APP_NAME} \
+                                --image=us-central1-docker.pkg.dev/\${GCP_PROJECT}/${APP_NAME}/${APP_NAME}:${APP_VERSION} \
+                                --region=${GCP_REGION} \
+                                --platform=managed \
+                                --allow-unauthenticated \
+                                --set-env-vars=NODE_ENV=production \
+                                --no-traffic \
+                                --tag=blue
+                            
+                            # Gradually shift traffic to new revision
+                            gcloud run services update-traffic ${APP_NAME} \
+                                --to-tags=blue=10 \
+                                --region=${GCP_REGION}
                         """
                     } else {
                         sh """
-                            kubectl set image deployment/${APP_NAME} \
-                                ${APP_NAME}=${DOCKER_REGISTRY}/${APP_NAME}:${APP_VERSION} \
-                                -n production
-                            kubectl rollout status deployment/${APP_NAME} -n production
+                            # Rolling deployment to Cloud Run
+                            gcloud run deploy ${APP_NAME} \
+                                --image=us-central1-docker.pkg.dev/\${GCP_PROJECT}/${APP_NAME}/${APP_NAME}:${APP_VERSION} \
+                                --region=${GCP_REGION} \
+                                --platform=managed \
+                                --allow-unauthenticated \
+                                --set-env-vars=NODE_ENV=production
                         """
                     }
                 }
