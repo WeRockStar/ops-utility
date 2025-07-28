@@ -15,6 +15,7 @@ Collection of useful commands for DevOps tasks.
 - [GPG Keys](./gpg-key/README.md)
 - [Grafana](./grafana/README.md) - In Progress
 - [Helm](./helm/README.md)
+- [Jenkins](./jenkins/README.md)
 - [Kind](./kind/README.md)
 - [Kubernetes](./k8s/README.md)
 - [Kustomize](./kustomize/README.md) - In Progress
