@@ -35,31 +35,35 @@ jcli console job-name
 
 ## Groovy Pipeline Scripts
 
-### 1. Basic CI/CD Pipeline
+### 1. Go Application CI/CD Pipeline
 
 ```groovy
 pipeline {
     agent any
     
     environment {
-        APP_NAME = 'my-application'
+        APP_NAME = 'my-go-app'
         APP_VERSION = "${BUILD_NUMBER}"
         GCP_PROJECT = 'your-gcp-project'
         GCP_REGION = 'us-central1'
+        GOOS = 'linux'
+        GOARCH = 'amd64'
+        CGO_ENABLED = '0'
     }
     
     stages {
         stage('Checkout') {
             steps {
-                git branch: 'main', url: 'https://github.com/your-org/your-repo.git'
+                git branch: 'main', url: 'https://github.com/your-org/your-go-repo.git'
             }
         }
         
-        stage('Build') {
+        stage('Setup Go') {
             steps {
                 script {
-                    echo "Building ${APP_NAME} version ${APP_VERSION}"
-                    sh 'mvn clean compile'
+                    echo "Setting up Go environment for ${APP_NAME} version ${APP_VERSION}"
+                    sh 'go version'
+                    sh 'go mod download'
                 }
             }
         }
@@ -68,29 +72,54 @@ pipeline {
             parallel {
                 stage('Unit Tests') {
                     steps {
-                        sh 'mvn test'
-                        publishTestResults testResultsPattern: 'target/surefire-reports/*.xml'
+                        sh 'go test -v ./... -coverprofile=coverage.out'
+                        sh 'go tool cover -html=coverage.out -o coverage.html'
+                        publishHTML([
+                            allowMissing: false,
+                            alwaysLinkToLastBuild: true,
+                            keepAll: true,
+                            reportDir: '.',
+                            reportFiles: 'coverage.html',
+                            reportName: 'Go Coverage Report'
+                        ])
                     }
                 }
-                stage('Integration Tests') {
+                stage('Lint') {
                     steps {
-                        sh 'mvn integration-test'
+                        sh 'go vet ./...'
+                        sh 'gofmt -l .'
                     }
                 }
             }
         }
         
-        stage('Package') {
-            steps {
-                sh 'mvn package -DskipTests'
-                archiveArtifacts artifacts: 'target/*.jar', allowEmptyArchive: false
-            }
-        }
-        
-        stage('Build and Push to Artifact Registry') {
+        stage('Build') {
             steps {
                 script {
                     sh """
+                        echo "Building Go binary for ${APP_NAME}"
+                        go build -ldflags="-w -s" -o ${APP_NAME} ./cmd/main.go
+                        ls -la ${APP_NAME}
+                    """
+                }
+                archiveArtifacts artifacts: "${APP_NAME}", allowEmptyArchive: false
+            }
+        }
+        
+        stage('Build and Push Docker Image') {
+            steps {
+                script {
+                    sh """
+                        # Create Dockerfile if it doesn't exist
+                        cat > Dockerfile << 'EOF'
+FROM alpine:latest
+RUN apk --no-cache add ca-certificates
+WORKDIR /root/
+COPY ${APP_NAME} .
+EXPOSE 8080
+CMD ["./${APP_NAME}"]
+EOF
+                        
                         # Configure Docker for Artifact Registry
                         gcloud auth configure-docker us-central1-docker.pkg.dev
                         
@@ -111,7 +140,7 @@ pipeline {
                             --region=${GCP_REGION} \
                             --platform=managed \
                             --allow-unauthenticated \
-                            --set-env-vars=NODE_ENV=staging
+                            --set-env-vars=GO_ENV=staging
                     """
                 }
             }
@@ -150,7 +179,7 @@ pipeline {
                                 --region=${GCP_REGION} \
                                 --platform=managed \
                                 --allow-unauthenticated \
-                                --set-env-vars=NODE_ENV=production \
+                                --set-env-vars=GO_ENV=production \
                                 --no-traffic \
                                 --tag=blue
                             
@@ -167,7 +196,7 @@ pipeline {
                                 --region=${GCP_REGION} \
                                 --platform=managed \
                                 --allow-unauthenticated \
-                                --set-env-vars=NODE_ENV=production
+                                --set-env-vars=GO_ENV=production
                         """
                     }
                 }
@@ -314,192 +343,15 @@ pipeline {
 }
 ```
 
-### 3. Multi-Environment Deployment Pipeline
-
-```groovy
-pipeline {
-    agent any
-    
-    parameters {
-        choice(
-            name: 'ENVIRONMENT',
-            choices: ['dev', 'staging', 'production'],
-            description: 'Target environment'
-        )
-        booleanParam(
-            name: 'SKIP_TESTS',
-            defaultValue: false,
-            description: 'Skip test execution'
-        )
-        string(
-            name: 'VERSION_TAG',
-            defaultValue: '',
-            description: 'Specific version to deploy (optional)'
-        )
-    }
-    
-    environment {
-        APP_NAME = 'microservice-api'
-        VERSION = params.VERSION_TAG ?: "${BUILD_NUMBER}"
-        KUBECONFIG_CRED = credentials('kubernetes-config')
-    }
-    
-    stages {
-        stage('Setup Environment') {
-            steps {
-                script {
-                    env.NAMESPACE = params.ENVIRONMENT
-                    env.REPLICAS = params.ENVIRONMENT == 'production' ? '3' : '1'
-                    env.RESOURCE_LIMITS = params.ENVIRONMENT == 'production' ? 'high' : 'low'
-                    
-                    switch(params.ENVIRONMENT) {
-                        case 'dev':
-                            env.DB_HOST = 'dev-postgres.internal'
-                            env.REDIS_HOST = 'dev-redis.internal'
-                            break
-                        case 'staging':
-                            env.DB_HOST = 'staging-postgres.internal'
-                            env.REDIS_HOST = 'staging-redis.internal'
-                            break
-                        case 'production':
-                            env.DB_HOST = 'prod-postgres.internal'
-                            env.REDIS_HOST = 'prod-redis.internal'
-                            break
-                    }
-                }
-            }
-        }
-        
-        stage('Build and Test') {
-            when {
-                not { params.SKIP_TESTS }
-            }
-            steps {
-                sh 'docker build -t ${APP_NAME}:${VERSION} .'
-                sh 'docker run --rm ${APP_NAME}:${VERSION} npm test'
-            }
-        }
-        
-        stage('Database Migration') {
-            when {
-                anyOf {
-                    params.ENVIRONMENT == 'staging'
-                    params.ENVIRONMENT == 'production'
-                }
-            }
-            steps {
-                script {
-                    sh """
-                        kubectl create job migration-${BUILD_NUMBER} \
-                            --from=cronjob/db-migration \
-                            -n ${NAMESPACE}
-                        kubectl wait --for=condition=complete \
-                            --timeout=300s \
-                            job/migration-${BUILD_NUMBER} \
-                            -n ${NAMESPACE}
-                    """
-                }
-            }
-        }
-        
-        stage('Deploy Application') {
-            steps {
-                script {
-                    writeFile file: 'deployment.yaml', text: """
-apiVersion: apps/v1
-kind: Deployment
-metadata:
-  name: ${APP_NAME}
-  namespace: ${NAMESPACE}
-spec:
-  replicas: ${REPLICAS}
-  selector:
-    matchLabels:
-      app: ${APP_NAME}
-  template:
-    metadata:
-      labels:
-        app: ${APP_NAME}
-        version: "${VERSION}"
-    spec:
-      containers:
-      - name: ${APP_NAME}
-        image: ${APP_NAME}:${VERSION}
-        env:
-        - name: NODE_ENV
-          value: "${ENVIRONMENT}"
-        - name: DB_HOST
-          value: "${DB_HOST}"
-        - name: REDIS_HOST
-          value: "${REDIS_HOST}"
-        resources:
-          requests:
-            memory: "${RESOURCE_LIMITS == 'high' ? '512Mi' : '256Mi'}"
-            cpu: "${RESOURCE_LIMITS == 'high' ? '500m' : '250m'}"
-          limits:
-            memory: "${RESOURCE_LIMITS == 'high' ? '1Gi' : '512Mi'}"
-            cpu: "${RESOURCE_LIMITS == 'high' ? '1000m' : '500m'}"
-"""
-                    
-                    sh """
-                        kubectl apply -f deployment.yaml
-                        kubectl rollout status deployment/${APP_NAME} -n ${NAMESPACE} --timeout=300s
-                    """
-                }
-            }
-        }
-        
-        stage('Health Check') {
-            steps {
-                script {
-                    def maxRetries = 10
-                    def retryCount = 0
-                    def healthUrl = "http://${APP_NAME}-service.${NAMESPACE}.svc.cluster.local:8080/health"
-                    
-                    while (retryCount < maxRetries) {
-                        try {
-                            sh "kubectl run health-check-${BUILD_NUMBER} --rm -i --restart=Never --image=curlimages/curl -- curl -f ${healthUrl}"
-                            echo "Health check passed!"
-                            break
-                        } catch (Exception e) {
-                            retryCount++
-                            if (retryCount >= maxRetries) {
-                                error "Health check failed after ${maxRetries} attempts"
-                            }
-                            sleep(30)
-                        }
-                    }
-                }
-            }
-        }
-    }
-    
-    post {
-        success {
-            script {
-                def message = "🚀 Successfully deployed ${APP_NAME} v${VERSION} to ${params.ENVIRONMENT}"
-                slackSend(channel: "#deployments", color: 'good', message: message)
-            }
-        }
-        failure {
-            script {
-                def message = "💥 Failed to deploy ${APP_NAME} v${VERSION} to ${params.ENVIRONMENT}"
-                slackSend(channel: "#deployments", color: 'danger', message: message)
-            }
-        }
-    }
-}
-```
-
-### 4. Microservices Orchestration Pipeline
+### 3. Microservices with Cloud Run
 
 ```groovy
 pipeline {
     agent any
     
     environment {
-        DOCKER_REGISTRY = 'your-registry.com'
-        NAMESPACE = 'microservices'
+        GCP_PROJECT = 'your-gcp-project'
+        GCP_REGION = 'us-central1'
     }
     
     stages {
@@ -509,10 +361,9 @@ pipeline {
                     steps {
                         dir('user-service') {
                             script {
-                                def image = docker.build("${DOCKER_REGISTRY}/user-service:${BUILD_NUMBER}")
-                                docker.withRegistry('https://' + DOCKER_REGISTRY, 'registry-creds') {
-                                    image.push()
-                                }
+                                sh """
+                                    gcloud builds submit --tag us-central1-docker.pkg.dev/\${GCP_PROJECT}/microservices/user-service:${BUILD_NUMBER} .
+                                """
                             }
                         }
                     }
@@ -521,22 +372,9 @@ pipeline {
                     steps {
                         dir('order-service') {
                             script {
-                                def image = docker.build("${DOCKER_REGISTRY}/order-service:${BUILD_NUMBER}")
-                                docker.withRegistry('https://' + DOCKER_REGISTRY, 'registry-creds') {
-                                    image.push()
-                                }
-                            }
-                        }
-                    }
-                }
-                stage('Payment Service') {
-                    steps {
-                        dir('payment-service') {
-                            script {
-                                def image = docker.build("${DOCKER_REGISTRY}/payment-service:${BUILD_NUMBER}")
-                                docker.withRegistry('https://' + DOCKER_REGISTRY, 'registry-creds') {
-                                    image.push()
-                                }
+                                sh """
+                                    gcloud builds submit --tag us-central1-docker.pkg.dev/\${GCP_PROJECT}/microservices/order-service:${BUILD_NUMBER} .
+                                """
                             }
                         }
                     }
@@ -545,10 +383,9 @@ pipeline {
                     steps {
                         dir('api-gateway') {
                             script {
-                                def image = docker.build("${DOCKER_REGISTRY}/api-gateway:${BUILD_NUMBER}")
-                                docker.withRegistry('https://' + DOCKER_REGISTRY, 'registry-creds') {
-                                    image.push()
-                                }
+                                sh """
+                                    gcloud builds submit --tag us-central1-docker.pkg.dev/\${GCP_PROJECT}/microservices/api-gateway:${BUILD_NUMBER} .
+                                """
                             }
                         }
                     }
@@ -556,40 +393,19 @@ pipeline {
             }
         }
         
-        stage('Deploy Infrastructure') {
+        stage('Deploy Services to Cloud Run') {
             steps {
                 script {
-                    sh """
-                        helm upgrade --install microservices-infra ./helm/infrastructure \
-                            --namespace ${NAMESPACE} \
-                            --create-namespace \
-                            --wait
-                    """
-                }
-            }
-        }
-        
-        stage('Deploy Services in Order') {
-            steps {
-                script {
-                    def services = ['user-service', 'order-service', 'payment-service', 'api-gateway']
+                    def services = ['user-service', 'order-service', 'api-gateway']
                     
                     services.each { service ->
                         echo "Deploying ${service}..."
                         sh """
-                            helm upgrade --install ${service} ./helm/${service} \
-                                --namespace ${NAMESPACE} \
-                                --set image.tag=${BUILD_NUMBER} \
-                                --set image.registry=${DOCKER_REGISTRY} \
-                                --wait --timeout=300s
-                        """
-                        
-                        // Wait for service to be ready
-                        sh """
-                            kubectl wait --for=condition=ready pod \
-                                -l app=${service} \
-                                -n ${NAMESPACE} \
-                                --timeout=300s
+                            gcloud run deploy ${service} \
+                                --image=us-central1-docker.pkg.dev/\${GCP_PROJECT}/microservices/${service}:${BUILD_NUMBER} \
+                                --region=${GCP_REGION} \
+                                --platform=managed \
+                                --allow-unauthenticated
                         """
                     }
                 }
@@ -600,27 +416,13 @@ pipeline {
             steps {
                 script {
                     sh """
-                        kubectl run integration-tests-${BUILD_NUMBER} \
-                            --rm -i --restart=Never \
-                            --image=${DOCKER_REGISTRY}/integration-tests:latest \
-                            --env="API_GATEWAY_URL=http://api-gateway.${NAMESPACE}.svc.cluster.local:8080" \
-                            -n ${NAMESPACE}
-                    """
-                }
-            }
-        }
-        
-        stage('Performance Tests') {
-            steps {
-                script {
-                    sh """
-                        kubectl run load-test-${BUILD_NUMBER} \
-                            --rm -i --restart=Never \
-                            --image=loadimpact/k6:latest \
-                            --command -- k6 run \
-                            --vus 50 \
-                            --duration 5m \
-                            /scripts/load-test.js
+                        # Get API Gateway URL
+                        API_URL=\$(gcloud run services describe api-gateway --region=${GCP_REGION} --format='value(status.url)')
+                        
+                        # Run integration tests
+                        curl -f \$API_URL/health || exit 1
+                        curl -f \$API_URL/users || exit 1
+                        curl -f \$API_URL/orders || exit 1
                     """
                 }
             }
@@ -630,22 +432,15 @@ pipeline {
     post {
         always {
             script {
-                // Collect logs from all services
-                def services = ['user-service', 'order-service', 'payment-service', 'api-gateway']
-                services.each { service ->
-                    sh """
-                        kubectl logs -l app=${service} -n ${NAMESPACE} \
-                            --tail=100 > ${service}-logs.txt || true
-                    """
-                }
-                archiveArtifacts artifacts: '*-logs.txt', allowEmptyArchive: true
+                echo "Microservices deployment completed"
             }
         }
     }
 }
+}
 ```
 
-### 5. Security-Focused Pipeline
+### 4. Security-Focused Pipeline
 
 ```groovy
 pipeline {
@@ -749,76 +544,21 @@ pipeline {
             }
         }
         
-        stage('Deploy with Security Policies') {
+        stage('Deploy with Security Best Practices') {
             steps {
                 script {
-                    writeFile file: 'security-policy.yaml', text: '''
-apiVersion: networking.k8s.io/v1
-kind: NetworkPolicy
-metadata:
-  name: my-app-network-policy
-spec:
-  podSelector:
-    matchLabels:
-      app: my-app
-  policyTypes:
-  - Ingress
-  - Egress
-  ingress:
-  - from:
-    - podSelector:
-        matchLabels:
-          role: frontend
-    ports:
-    - protocol: TCP
-      port: 8080
-  egress:
-  - to:
-    - podSelector:
-        matchLabels:
-          role: database
-    ports:
-    - protocol: TCP
-      port: 5432
----
-apiVersion: v1
-kind: SecurityContext
-metadata:
-  name: my-app-security-context
-spec:
-  runAsNonRoot: true
-  runAsUser: 10001
-  runAsGroup: 10001
-  fsGroup: 10001
-  readOnlyRootFilesystem: true
-  allowPrivilegeEscalation: false
-  capabilities:
-    drop:
-    - ALL
-'''
-                    
                     sh '''
-                        kubectl apply -f security-policy.yaml
-                        
-                        kubectl set image deployment/my-app \
-                            my-app=my-app:${BUILD_NUMBER}
-                        
-                        kubectl patch deployment my-app -p '{
-                            "spec": {
-                                "template": {
-                                    "spec": {
-                                        "securityContext": {
-                                            "runAsNonRoot": true,
-                                            "runAsUser": 10001,
-                                            "runAsGroup": 10001,
-                                            "fsGroup": 10001
-                                        }
-                                    }
-                                }
-                            }
-                        }'
-                        
-                        kubectl rollout status deployment/my-app --timeout=300s
+                        # Deploy to Cloud Run with security best practices
+                        gcloud run deploy my-app \
+                            --image=my-app:${BUILD_NUMBER} \
+                            --region=us-central1 \
+                            --platform=managed \
+                            --no-allow-unauthenticated \
+                            --cpu-throttling \
+                            --memory=1Gi \
+                            --max-instances=10 \
+                            --concurrency=100 \
+                            --set-env-vars="NODE_ENV=production"
                     '''
                 }
             }
@@ -828,11 +568,14 @@ spec:
             steps {
                 script {
                     sh '''
+                        # Get Cloud Run service URL for security testing
+                        SERVICE_URL=$(gcloud run services describe my-app --region=us-central1 --format='value(status.url)')
+                        
                         # OWASP ZAP security testing
                         docker run --rm -v $(pwd):/zap/wrk/:rw \
                             -t owasp/zap2docker-weekly \
                             zap-baseline.py \
-                            -t http://my-app-service:8080 \
+                            -t $SERVICE_URL \
                             -J zap-report.json \
                             -r zap-report.html
                     '''
@@ -853,12 +596,11 @@ spec:
     post {
         always {
             script {
-                // Security metrics collection
+                // Cloud Run security configuration report
                 sh '''
-                    kubectl get pods -l app=my-app -o json | \
-                        jq '.items[].spec.securityContext' > security-context-report.json
+                    gcloud run services describe my-app --region=us-central1 --format=json > cloud-run-config.json
                 '''
-                archiveArtifacts artifacts: 'security-context-report.json'
+                archiveArtifacts artifacts: 'cloud-run-config.json'
             }
         }
         failure {
@@ -872,7 +614,7 @@ spec:
 }
 ```
 
-### 6. Blue-Green Deployment Pipeline
+### 5. Cloud Run Blue-Green Deployment
 
 ```groovy
 pipeline {
@@ -881,180 +623,106 @@ pipeline {
     environment {
         APP_NAME = 'web-application'
         VERSION = "${BUILD_NUMBER}"
-        NAMESPACE = 'production'
+        GCP_PROJECT = 'your-gcp-project'
+        GCP_REGION = 'us-central1'
     }
     
     stages {
         stage('Build and Test') {
             steps {
-                sh 'docker build -t ${APP_NAME}:${VERSION} .'
-                sh 'docker run --rm ${APP_NAME}:${VERSION} npm test'
+                sh 'go test ./...'
+                sh 'go build -o ${APP_NAME} .'
+                sh """
+                    gcloud builds submit --tag us-central1-docker.pkg.dev/\${GCP_PROJECT}/${APP_NAME}/${APP_NAME}:${VERSION} .
+                """
             }
         }
         
-        stage('Deploy to Blue Environment') {
+        stage('Deploy Blue Version') {
             steps {
                 script {
-                    // Deploy to blue environment
+                    // Deploy new version with blue tag, no traffic
                     sh """
-                        kubectl set image deployment/${APP_NAME}-blue \
-                            ${APP_NAME}=${APP_NAME}:${VERSION} \
-                            -n ${NAMESPACE}
-                        
-                        kubectl rollout status deployment/${APP_NAME}-blue \
-                            -n ${NAMESPACE} --timeout=300s
+                        gcloud run deploy ${APP_NAME} \
+                            --image=us-central1-docker.pkg.dev/\${GCP_PROJECT}/${APP_NAME}/${APP_NAME}:${VERSION} \
+                            --region=${GCP_REGION} \
+                            --platform=managed \
+                            --allow-unauthenticated \
+                            --no-traffic \
+                            --tag=blue-${VERSION}
                     """
                 }
             }
         }
         
-        stage('Test Blue Environment') {
+        stage('Test Blue Version') {
             steps {
                 script {
-                    // Health check on blue environment
-                    sh """
-                        kubectl run test-blue-${BUILD_NUMBER} --rm -i --restart=Never \
-                            --image=curlimages/curl \
-                            -- curl -f http://${APP_NAME}-blue-service.${NAMESPACE}.svc.cluster.local:8080/health
-                    """
+                    // Get blue version URL
+                    def blueUrl = sh(
+                        script: "gcloud run services describe ${APP_NAME} --region=${GCP_REGION} --format='value(status.traffic[0].url)' | grep blue-${VERSION}",
+                        returnStdout: true
+                    ).trim()
                     
-                    // Load test on blue environment
-                    sh """
-                        kubectl run load-test-blue-${BUILD_NUMBER} --rm -i --restart=Never \
-                            --image=loadimpact/k6:latest \
-                            --command -- k6 run --vus 10 --duration 2m \
-                            -e BASE_URL=http://${APP_NAME}-blue-service.${NAMESPACE}.svc.cluster.local:8080 \
-                            /scripts/load-test.js
-                    """
+                    // Test blue version
+                    sh "curl -f ${blueUrl}/health || exit 1"
+                    echo 'Blue version tests passed!'
                 }
             }
         }
         
-        stage('Switch Traffic to Blue') {
+        stage('Gradual Traffic Switch') {
             input {
-                message "Switch traffic to blue environment?"
-                ok "Switch Traffic"
-                parameters {
-                    choice(
-                        name: 'TRAFFIC_SPLIT',
-                        choices: ['10', '25', '50', '100'],
-                        description: 'Percentage of traffic to route to blue'
-                    )
-                }
+                message "Start traffic migration to blue version?"
+                ok "Start Migration"
             }
             steps {
                 script {
-                    def trafficSplit = params.TRAFFIC_SPLIT as Integer
-                    def blueWeight = trafficSplit
-                    def greenWeight = 100 - trafficSplit
-                    
+                    // Start with 10% traffic to blue
                     sh """
-                        kubectl patch service ${APP_NAME}-service -p '{
-                            "spec": {
-                                "selector": {
-                                    "app": "${APP_NAME}",
-                                    "version": "blue"
-                                }
-                            }
-                        }' -n ${NAMESPACE}
+                        gcloud run services update-traffic ${APP_NAME} \
+                            --to-tags=blue-${VERSION}=10 \
+                            --region=${GCP_REGION}
                     """
                     
-                    // If using Istio for traffic splitting
-                    if (trafficSplit < 100) {
-                        writeFile file: 'virtual-service.yaml', text: """
-apiVersion: networking.istio.io/v1beta1
-kind: VirtualService
-metadata:
-  name: ${APP_NAME}
-  namespace: ${NAMESPACE}
-spec:
-  http:
-  - match:
-    - headers:
-        canary:
-          exact: "true"
-    route:
-    - destination:
-        host: ${APP_NAME}-blue-service
-      weight: 100
-  - route:
-    - destination:
-        host: ${APP_NAME}-blue-service
-      weight: ${blueWeight}
-    - destination:
-        host: ${APP_NAME}-green-service
-      weight: ${greenWeight}
-"""
-                        sh 'kubectl apply -f virtual-service.yaml'
-                    }
-                    
-                    echo "Traffic split: ${blueWeight}% blue, ${greenWeight}% green"
-                }
-            }
-        }
-        
-        stage('Monitor Blue Environment') {
-            steps {
-                script {
-                    echo "Monitoring blue environment for 5 minutes..."
+                    echo "10% traffic routed to blue version. Monitoring..."
                     sleep(300) // Monitor for 5 minutes
                     
-                    // Check error rates and response times
+                    // Increase to 50%
                     sh """
-                        kubectl run monitor-${BUILD_NUMBER} --rm -i --restart=Never \
-                            --image=curlimages/curl \
-                            --command -- sh -c '
-                                for i in \$(seq 1 60); do
-                                    curl -w "%{http_code} %{time_total}\\n" -o /dev/null -s \
-                                        http://${APP_NAME}-service.${NAMESPACE}.svc.cluster.local:8080/health
-                                    sleep 5
-                                done
-                            '
+                        gcloud run services update-traffic ${APP_NAME} \
+                            --to-tags=blue-${VERSION}=50 \
+                            --region=${GCP_REGION}
                     """
+                    
+                    echo "50% traffic routed to blue version. Monitoring..."
+                    sleep(300) // Monitor for 5 minutes
                 }
             }
         }
         
-        stage('Complete Blue-Green Switch') {
+        stage('Complete Migration') {
             input {
-                message "Complete the blue-green deployment?"
-                ok "Complete Switch"
+                message "Complete migration to blue version (100% traffic)?"
+                ok "Complete"
             }
             steps {
                 script {
-                    // Switch all traffic to blue
+                    // Route 100% traffic to blue version
                     sh """
-                        kubectl patch service ${APP_NAME}-service -p '{
-                            "spec": {
-                                "selector": {
-                                    "app": "${APP_NAME}",
-                                    "version": "blue"
-                                }
-                            }
-                        }' -n ${NAMESPACE}
-                    """
-                    
-                    // Scale down green environment
-                    sh """
-                        kubectl scale deployment ${APP_NAME}-green --replicas=0 -n ${NAMESPACE}
-                    """
-                    
-                    // Rename deployments for next cycle
-                    sh """
-                        kubectl patch deployment ${APP_NAME}-green -p '{
-                            "metadata": {"name": "${APP_NAME}-temp"}
-                        }' -n ${NAMESPACE}
-                        
-                        kubectl patch deployment ${APP_NAME}-blue -p '{
-                            "metadata": {"name": "${APP_NAME}-green"}
-                        }' -n ${NAMESPACE}
-                        
-                        kubectl patch deployment ${APP_NAME}-temp -p '{
-                            "metadata": {"name": "${APP_NAME}-blue"}
-                        }' -n ${NAMESPACE}
+                        gcloud run services update-traffic ${APP_NAME} \
+                            --to-tags=blue-${VERSION}=100 \
+                            --region=${GCP_REGION}
                     """
                     
                     echo "Blue-green deployment completed successfully!"
+                    
+                    // Optional: Clean up old revisions after successful deployment
+                    sh """
+                        gcloud run revisions list --service=${APP_NAME} --region=${GCP_REGION} \
+                            --format='value(metadata.name)' | tail -n +6 | \
+                            xargs -I {} gcloud run revisions delete {} --region=${GCP_REGION} --quiet || true
+                    """
                 }
             }
         }
@@ -1063,25 +731,20 @@ spec:
     post {
         failure {
             script {
-                // Rollback to green environment on failure
+                // Rollback to previous version on failure
                 sh """
-                    kubectl patch service ${APP_NAME}-service -p '{
-                        "spec": {
-                            "selector": {
-                                "app": "${APP_NAME}",
-                                "version": "green"
-                            }
-                        }
-                    }' -n ${NAMESPACE}
+                    gcloud run services update-traffic ${APP_NAME} \
+                        --to-latest \
+                        --region=${GCP_REGION}
                 """
-                echo "Rolled back to green environment due to failure"
+                echo "Rolled back to previous version due to failure"
             }
         }
     }
 }
 ```
 
-### 7. Database Migration Pipeline
+### 6. Database Migration Pipeline
 
 ```groovy
 pipeline {
@@ -1101,11 +764,12 @@ pipeline {
     }
     
     environment {
-        DB_HOST = 'postgres.database.svc.cluster.local'
+        DB_HOST = 'your-cloud-sql-instance'
         DB_PORT = '5432'
         DB_NAME = 'myapp'
         DB_USER = credentials('db-username')
         DB_PASSWORD = credentials('db-password')
+        GCP_PROJECT = 'your-gcp-project'
     }
     
     stages {
@@ -1114,16 +778,14 @@ pipeline {
                 script {
                     def timestamp = new Date().format('yyyyMMdd-HHmmss')
                     sh """
-                        kubectl run db-backup-${BUILD_NUMBER} --rm -i --restart=Never \
-                            --image=postgres:13 \
-                            --env="PGPASSWORD=${DB_PASSWORD}" \
-                            --command -- pg_dump \
+                        # Run backup using Cloud SQL proxy or direct connection
+                        docker run --rm postgres:13 \
+                            pg_dump \
                             -h ${DB_HOST} \
                             -p ${DB_PORT} \
                             -U ${DB_USER} \
                             -d ${DB_NAME} \
-                            --verbose \
-                            --no-password > backup-${timestamp}.sql
+                            --verbose > backup-${timestamp}.sql
                     """
                     
                     // Store backup in S3 or persistent storage
@@ -1141,12 +803,10 @@ pipeline {
             steps {
                 script {
                     sh """
-                        kubectl run migration-test-${BUILD_NUMBER} --rm -i --restart=Never \
-                            --image=migrate/migrate \
-                            --env="DATABASE_URL=postgres://${DB_USER}:${DB_PASSWORD}@${DB_HOST}:${DB_PORT}/${DB_NAME}?sslmode=disable" \
-                            --command -- migrate \
-                            -source file://migrations \
-                            -database \$DATABASE_URL \
+                        # Validate migrations using Docker
+                        docker run --rm migrate/migrate \
+                            -source file:///migrations \
+                            -database "postgres://${DB_USER}:${DB_PASSWORD}@${DB_HOST}:${DB_PORT}/${DB_NAME}?sslmode=disable" \
                             version
                     """
                 }
@@ -1158,22 +818,16 @@ pipeline {
                 script {
                     if (params.MIGRATION_TYPE == 'forward') {
                         sh """
-                            kubectl run migration-forward-${BUILD_NUMBER} --rm -i --restart=Never \
-                                --image=migrate/migrate \
-                                --env="DATABASE_URL=postgres://${DB_USER}:${DB_PASSWORD}@${DB_HOST}:${DB_PORT}/${DB_NAME}?sslmode=disable" \
-                                --command -- migrate \
-                                -source file://migrations \
-                                -database \$DATABASE_URL \
+                            docker run --rm -v \$(pwd)/migrations:/migrations migrate/migrate \
+                                -source file:///migrations \
+                                -database "postgres://${DB_USER}:${DB_PASSWORD}@${DB_HOST}:${DB_PORT}/${DB_NAME}?sslmode=disable" \
                                 up
                         """
                     } else if (params.MIGRATION_TYPE == 'rollback' && params.TARGET_VERSION) {
                         sh """
-                            kubectl run migration-rollback-${BUILD_NUMBER} --rm -i --restart=Never \
-                                --image=migrate/migrate \
-                                --env="DATABASE_URL=postgres://${DB_USER}:${DB_PASSWORD}@${DB_HOST}:${DB_PORT}/${DB_NAME}?sslmode=disable" \
-                                --command -- migrate \
-                                -source file://migrations \
-                                -database \$DATABASE_URL \
+                            docker run --rm -v \$(pwd)/migrations:/migrations migrate/migrate \
+                                -source file:///migrations \
+                                -database "postgres://${DB_USER}:${DB_PASSWORD}@${DB_HOST}:${DB_PORT}/${DB_NAME}?sslmode=disable" \
                                 goto ${params.TARGET_VERSION}
                         """
                     }
@@ -1185,10 +839,9 @@ pipeline {
             steps {
                 script {
                     sh """
-                        kubectl run migration-verify-${BUILD_NUMBER} --rm -i --restart=Never \
-                            --image=postgres:13 \
-                            --env="PGPASSWORD=${DB_PASSWORD}" \
-                            --command -- psql \
+                        # Verify migration using Docker
+                        docker run --rm postgres:13 \
+                            psql \
                             -h ${DB_HOST} \
                             -p ${DB_PORT} \
                             -U ${DB_USER} \
@@ -1198,15 +851,13 @@ pipeline {
                     
                     // Run data integrity checks
                     sh """
-                        kubectl run data-integrity-${BUILD_NUMBER} --rm -i --restart=Never \
-                            --image=postgres:13 \
-                            --env="PGPASSWORD=${DB_PASSWORD}" \
-                            --command -- psql \
+                        docker run --rm -v \$(pwd)/integrity-checks.sql:/integrity-checks.sql postgres:13 \
+                            psql \
                             -h ${DB_HOST} \
                             -p ${DB_PORT} \
                             -U ${DB_USER} \
                             -d ${DB_NAME} \
-                            -f integrity-checks.sql
+                            -f /integrity-checks.sql
                     """
                 }
             }
@@ -1220,11 +871,11 @@ pipeline {
                 script {
                     // Deploy new application version that uses migrated schema
                     sh """
-                        kubectl set image deployment/myapp \
-                            myapp=myapp:${BUILD_NUMBER} \
-                            --record
-                        
-                        kubectl rollout status deployment/myapp --timeout=300s
+                        gcloud run deploy myapp \
+                            --image=us-central1-docker.pkg.dev/\${GCP_PROJECT}/myapp/myapp:${BUILD_NUMBER} \
+                            --region=us-central1 \
+                            --platform=managed \
+                            --allow-unauthenticated
                     """
                 }
             }
@@ -1234,10 +885,9 @@ pipeline {
             steps {
                 script {
                     sh """
-                        kubectl run post-migration-tests-${BUILD_NUMBER} --rm -i --restart=Never \
-                            --image=myapp-tests:latest \
-                            --env="DATABASE_URL=postgres://${DB_USER}:${DB_PASSWORD}@${DB_HOST}:${DB_PORT}/${DB_NAME}" \
-                            --command -- npm run test:integration
+                        # Run post-migration tests using Docker
+                        docker run --rm myapp-tests:latest \
+                            npm run test:integration
                     """
                 }
             }
@@ -1254,13 +904,11 @@ pipeline {
                     input message: "Migration failed. Perform automatic rollback?", ok: "Rollback"
                     
                     sh """
-                        kubectl run migration-emergency-rollback-${BUILD_NUMBER} --rm -i --restart=Never \
-                            --image=postgres:13 \
-                            --env="PGPASSWORD=${DB_PASSWORD}" \
-                            --command -- sh -c "
-                                aws s3 cp s3://database-backups/myapp/${env.BACKUP_FILE} - | \
-                                psql -h ${DB_HOST} -p ${DB_PORT} -U ${DB_USER} -d ${DB_NAME}
-                            "
+                        # Emergency rollback using Docker
+                        docker run --rm postgres:13 sh -c "
+                            aws s3 cp s3://database-backups/myapp/${env.BACKUP_FILE} - | \
+                            psql -h ${DB_HOST} -p ${DB_PORT} -U ${DB_USER} -d ${DB_NAME}
+                        "
                     """
                 }
             }
@@ -1286,34 +934,31 @@ pipeline {
 Create shared libraries for common CI/CD patterns:
 
 ```groovy
-// vars/deployToKubernetes.groovy
+// vars/deployToCloudRun.groovy
 def call(Map config) {
     script {
         sh """
-            helm upgrade --install ${config.name} ${config.chart} \
-                --namespace ${config.namespace} \
-                --set image.tag=${config.tag} \
-                --set image.repository=${config.repository} \
-                --wait --timeout=300s
+            gcloud run deploy ${config.name} \
+                --image=${config.image}:${config.tag} \
+                --region=${config.region ?: 'us-central1'} \
+                --platform=managed \
+                --allow-unauthenticated
         """
         
         // Health check
         sh """
-            kubectl wait --for=condition=ready pod \
-                -l app=${config.name} \
-                -n ${config.namespace} \
-                --timeout=300s
+            SERVICE_URL=\$(gcloud run services describe ${config.name} --region=${config.region ?: 'us-central1'} --format='value(status.url)')
+            curl -f \$SERVICE_URL/health || exit 1
         """
     }
 }
 
 // Usage in Jenkinsfile:
-// deployToKubernetes([
+// deployToCloudRun([
 //     name: 'my-app',
-//     chart: './helm/my-app',
-//     namespace: 'production',
+//     image: 'us-central1-docker.pkg.dev/my-project/my-app/my-app',
 //     tag: BUILD_NUMBER,
-//     repository: 'my-registry.com/my-app'
+//     region: 'us-central1'
 // ])
 ```
 
