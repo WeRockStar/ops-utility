@@ -5,6 +5,7 @@ Collection of useful commands for DevOps tasks.
 ## Table of Contents
 
 - [Ansible](./ansible/README.md) - In Progress
+- [Apache Benchmark](./apache-benchmark/README.md)
 - [ArgoCD](./argocd/README.md)
 - [AWS CLI](./aws-cli/README.md)
 - [Colima](./colima/README.md)
