@@ -4,7 +4,7 @@ Apache Benchmark is a command-line tool for benchmarking HTTP web servers. It is
 
 ## Installation
 
-### macOS
+Apache Benchmark can be installed on macOS using Homebrew:
 
 ```bash
 # Apache Benchmark comes with Apache HTTP Server
@@ -12,23 +12,6 @@ brew install httpd
 
 # Or install just the tools
 brew install apache-ab
-```
-
-### Ubuntu/Debian
-
-```bash
-sudo apt-get update
-sudo apt-get install apache2-utils
-```
-
-### CentOS/RHEL/Fedora
-
-```bash
-# CentOS/RHEL
-sudo yum install httpd-tools
-
-# Fedora
-sudo dnf install httpd-tools
 ```
 
 ## Basic Usage
